@@ -94,13 +94,13 @@ int EncryptAndSendMessage(int dest, byte *s_key, byte *h_key, byte *msg, int len
 
     hmac_input.len = SEQ_NO_SIZE + iv.len + ciphertext.len;
     hmac_input.value = new byte[hmac_input.len]; 
-    cout << "TEST\n";
-    memcpy(hmac_input.value, (const void*)next_seq_no, SEQ_NO_SIZE); // NOT WORKING HERE
-    cout << "TEST2\n";
+    //cout << "TEST\n";
+    memcpy(hmac_input.value, &next_seq_no, SEQ_NO_SIZE); // NOT WORKING HERE
+    //cout << "TEST2\n";
 	memcpy(hmac_input.value + SEQ_NO_SIZE, iv.value, iv.len);
-    cout << "TEST3\n";
+    //cout << "TEST3\n";
 	memcpy(hmac_input.value + SEQ_NO_SIZE + iv.len, ciphertext.value, ciphertext.len);
-    cout << "TEST4\n";
+    //cout << "TEST4\n";
     ret = HMACMessage(hmac_input.value, hmac_input.len, h_key, HMAC_KEY_SIZE, &send_hdigest.value, &send_hdigest.len);
     
     if (ret == FAILURE){
@@ -110,13 +110,15 @@ int EncryptAndSendMessage(int dest, byte *s_key, byte *h_key, byte *msg, int len
 
     // TODO: send the next_seq_no, IV, ciphertext, and MAC
     next_seq_buf.len = SEQ_NO_SIZE;
-    next_seq_buf.value[SEQ_NO_SIZE];
-    memcpy(next_seq_buf.value, (const void*)next_seq_no, SEQ_NO_SIZE);
+    next_seq_buf.value = new byte[next_seq_buf.len];
+    cout << "TEST\n";
+    memcpy(next_seq_buf.value, &next_seq_no, SEQ_NO_SIZE);
     ret = SendBytes(dest, &next_seq_buf);
         if (ret == FAILURE){
             cout << "Sequence Number Failure" << endl;
             goto done;
         }
+        cout << "TEST2\n";
     ret = SendBytes(dest, &iv);
         if (ret == FAILURE){
             cout << "IV Send Failure" << endl;
@@ -168,9 +170,15 @@ int EncryptAndSendMessage(int dest, byte *s_key, byte *h_key, byte *msg, int len
 // Read assignment description for more information
 
 int ReceiveAndDecryptMessage(int src, byte *s_key, byte *h_key, byte *buffer, int buffer_size) {
-    bytes_t iv, ciphertext, digest, hmac_input, rec_hdigest;
+    bytes_t iv, ciphertext, digest, hmac_input, rec_hdigest, next_seq_buf;
     unsigned long long seq_no;
     int ret = FAILURE;
+
+    next_seq_buf.len = SEQ_NO_SIZE;
+    next_seq_buf.value = new byte[next_seq_buf.len];
+
+    iv.len = CIPHER_BLOCK_SIZE;
+    iv.value = new byte[iv.len];
 
     byte *plaintext = NULL;
     int plaintext_len;
@@ -178,7 +186,8 @@ int ReceiveAndDecryptMessage(int src, byte *s_key, byte *h_key, byte *buffer, in
 
 
     // receive sequence number, IV, message, MAC
-    ret = ReceiveAMessage(src, (byte *)&seq_no, SEQ_NO_SIZE);
+    ret = ReceiveBytes(src, &next_seq_buf);
+    cout << "RETURN: " << ret << "\n";
         if (ret ==FAILURE){
             cout << "Sequence Number Reception Failure\n";
             goto done;
