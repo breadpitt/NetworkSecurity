@@ -111,14 +111,14 @@ int EncryptAndSendMessage(int dest, byte *s_key, byte *h_key, byte *msg, int len
     // TODO: send the next_seq_no, IV, ciphertext, and MAC
     next_seq_buf.len = SEQ_NO_SIZE;
     next_seq_buf.value = new byte[next_seq_buf.len];
-    cout << "TEST\n";
+   
     memcpy(next_seq_buf.value, &next_seq_no, SEQ_NO_SIZE);
     ret = SendBytes(dest, &next_seq_buf);
         if (ret == FAILURE){
             cout << "Sequence Number Failure" << endl;
             goto done;
         }
-        cout << "TEST2\n";
+        
     ret = SendBytes(dest, &iv);
         if (ret == FAILURE){
             cout << "IV Send Failure" << endl;
@@ -135,14 +135,8 @@ int EncryptAndSendMessage(int dest, byte *s_key, byte *h_key, byte *msg, int len
             goto done;
         }
 
-	
-	
-
     // TODO: increment next_seq_no and set return value
     next_seq_no++;
-
-
-
     done:
 
     // TODO: cleanup
@@ -186,7 +180,8 @@ int ReceiveAndDecryptMessage(int src, byte *s_key, byte *h_key, byte *buffer, in
 
 
     // receive sequence number, IV, message, MAC
-    ret = ReceiveBytes(src, &next_seq_buf);
+    ret = ReceiveBytes(src, &next_seq_buf); // I can't get the function to receive properly... I tried receive message, different types, receiving it all at once and then parsing it...
+                                            // but this seemed like the right way to do it I just am doing something wrong
     cout << "RETURN: " << ret << "\n";
         if (ret ==FAILURE){
             cout << "Sequence Number Reception Failure\n";
@@ -214,6 +209,7 @@ int ReceiveAndDecryptMessage(int src, byte *s_key, byte *h_key, byte *buffer, in
         goto done;
     }
 
+// Everything after this should theoritcally work (it is very similar to the encryption above) but I never got a chance to test it    
     // TODO: decrypt message
     plaintext = new byte[ciphertext.len + CIPHER_BLOCK_SIZE];
     ret = DecryptMessage(ciphertext.value, ciphertext.len, s_key, iv.value, plaintext);
@@ -264,7 +260,7 @@ int ReceiveAndDecryptMessage(int src, byte *s_key, byte *h_key, byte *buffer, in
         goto done;
     }
    // TODO: set expected_next_seq_no and return value
-   
+    //next_seq_buf++  increment the expected next sequence number to match the next incoming sequence number
 
     done:
 
