@@ -51,6 +51,9 @@ int GetBytesAndSignatureFromPublicKey(EVP_PKEY *key, EVP_PKEY *pri_key,
     int ret = DHE_FAIL;
     EVP_MD_CTX *mdctx = NULL;
     int rc = 0;
+    size_t req = 0;
+    byte* val = NULL;
+    size_t* vlen = 0;
      const EVP_MD* md = EVP_get_digestbyname("SHA256");
     // get the public key
     if ((*pkey = GetBytesFromPublicKey(key)) == NULL) return DHE_FAIL;
@@ -90,41 +93,38 @@ int GetBytesAndSignatureFromPublicKey(EVP_PKEY *key, EVP_PKEY *pri_key,
         }
 
     // TODO: obtain the length of the signature
-size_t req = 0;
-    rc = EVP_DigestSignFinal(ctx, NULL, &req);
-        assert(rc == 1);
+
+    rc = EVP_DigestSignFinal(mdctx, NULL, &req);
         if(rc != 1) {
-            printf("EVP_DigestSignFinal failed (1), error 0x%lx\n", ERR_get_error());
-            break; /* failed */
+            printf("EVP_DigestSignFinal failed\n");
+            goto done;
         }
         
-        assert(req > 0);
         if(!(req > 0)) {
-            printf("EVP_DigestSignFinal failed (2), error 0x%lx\n", ERR_get_error());
-            break; /* failed */
+            printf("EVP_DigestSignFinal failed\n");
+            goto done;
         }
     // TODO: allocate memory for the signature
-    *val = OPENSSL_malloc(req);
-        assert(*val != NULL);
+    val = OPENSSL_malloc(req);
+        
         if(*val == NULL) {
-            printf("OPENSSL_malloc failed, error 0x%lx\n", ERR_get_error());
-            break; /* failed */
+            printf("OPENSSL_malloc failed\n");
+            goto done;
         }
 
     // TODO: obtain the signature
     *vlen = req;
 
-     rc = EVP_DigestSignFinal(ctx, *val, vlen);
-        assert(rc == 1);
+     rc = EVP_DigestSignFinal(mdctx, val, vlen);
+    
         if(rc != 1) {
-            printf("EVP_DigestSignFinal failed (3), return code %d, error 0x%lx\n", rc, ERR_get_error());
-            break; /* failed */
+            printf("EVP_DigestSignFinal failed (3), return code %d\n", rc);
+            goto done;
         }
         
-        assert(req == *vlen);
         if(req != *vlen) {
             printf("EVP_DigestSignFinal failed, mismatched signature sizes %ld, %ld", req, *vlen);
-            break; /* failed */
+            goto done;
         }
     // TODO: set ret to SUCCESS
 
